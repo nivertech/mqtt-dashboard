@@ -14,7 +14,7 @@ __copyright__ = "Copyright (C) Dennis Sell"
 
 
 APPNAME = "mqtt-dashboard"
-VERSION = "0.8"
+VERSION = "0.10"
 WATCHTOPIC = "/raw/" + APPNAME + "/command"
 
 
@@ -27,6 +27,7 @@ import threading
 import Queue
 from Tkinter import *
 from ScrolledText import ScrolledText
+import datetime
 
 
 class MyMQTTClientCore(MQTTClientCore):
@@ -43,7 +44,21 @@ class MyMQTTClientCore(MQTTClientCore):
         self.root.title("MQTT Dashboard")
         frame = Frame(self.root)
         frame.pack()
-        version_ofx=0
+        host_ofx=0
+        Label(frame, text="Hostname:").grid(row=host_ofx, column=0, sticky=W)
+        self.host_text = Text(frame, height=1, width=30)
+        self.host_text.grid(row=host_ofx, column=1, columnspan=3, sticky=W)
+        self.host_text.delete(1.0, END)
+        self.host_text.insert(END, self.mqtthost)
+        self.button_connect = Button(frame, text="Connect", command=connect)
+        self.button_connect.grid(row=host_ofx, column=4, columnspan=2, sticky=W)
+        self.button_disconnect = Button(frame, text="Disconnect", command=disconnect)
+        self.button_disconnect.grid(row=host_ofx, column=5, columnspan=2)
+
+        fill0_ofx=host_ofx+1
+        Label(frame, text="").grid(row=fill0_ofx, column=0)
+
+        version_ofx=fill0_ofx+1
         Label(frame, text="Version:").grid(row=version_ofx, column=0, sticky=W)
         self.version_text = Text(frame, height=1, width=30, state=DISABLED)
         self.version_text.grid(row=version_ofx, column=1, columnspan=3)
@@ -62,6 +77,7 @@ class MyMQTTClientCore(MQTTClientCore):
         Label(frame, text="Per 5 Min").grid(row=load_ofx, column=5, columnspan=2)
         Label(frame, text="Per 15 Min").grid(row=load_ofx, column=7, columnspan=2)
         Label(frame, text="Total").grid(row=load_ofx, column=9, columnspan=2)
+
         Label(frame, text="Received").grid(row=load_ofx+1, column=2)
         Label(frame, text="Sent").grid(row=load_ofx+1, column=1)
         Label(frame, text="Received").grid(row=load_ofx+1, column=4)
@@ -73,95 +89,95 @@ class MyMQTTClientCore(MQTTClientCore):
         Label(frame, text="Received").grid(row=load_ofx+1, column=10)
         Label(frame, text="Sent").grid(row=load_ofx+1, column=9)
 
-        Label(frame, text="Bytes").grid(row=load_ofx+1+1, column=0, sticky=W)
+        Label(frame, text="Bytes").grid(row=load_ofx+2, column=0, sticky=W)
         self.bytes_ss_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.bytes_ss_text.grid(row=4, column=1)
+        self.bytes_ss_text.grid(row=load_ofx+2, column=1)
         self.bytes_sr_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.bytes_sr_text.grid(row=4, column=2)
+        self.bytes_sr_text.grid(row=load_ofx+2, column=2)
         self.bytes_1ms_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.bytes_1ms_text.grid(row=4, column=3)
+        self.bytes_1ms_text.grid(row=load_ofx+2, column=3)
         self.bytes_1mr_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.bytes_1mr_text.grid(row=4, column=4)
+        self.bytes_1mr_text.grid(row=load_ofx+2, column=4)
         self.bytes_5ms_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.bytes_5ms_text.grid(row=4, column=5)
+        self.bytes_5ms_text.grid(row=load_ofx+2, column=5)
         self.bytes_5mr_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.bytes_5mr_text.grid(row=4, column=6)
+        self.bytes_5mr_text.grid(row=load_ofx+2, column=6)
         self.bytes_15ms_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.bytes_15ms_text.grid(row=4, column=7)
+        self.bytes_15ms_text.grid(row=load_ofx+2, column=7)
         self.bytes_15mr_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.bytes_15mr_text.grid(row=4, column=8)
-        self.bytes_ts_text = Text(frame, height=1, width=12, state=DISABLED)
-        self.bytes_ts_text.grid(row=4, column=9)
-        self.bytes_tr_text = Text(frame, height=1, width=12, state=DISABLED)
-        self.bytes_tr_text.grid(row=4, column=10)
+        self.bytes_15mr_text.grid(row=load_ofx+2, column=8)
+        self.bytes_ts_text = Text(frame, height=1, width=16, state=DISABLED)
+        self.bytes_ts_text.grid(row=load_ofx+2, column=9)
+        self.bytes_tr_text = Text(frame, height=1, width=16, state=DISABLED)
+        self.bytes_tr_text.grid(row=load_ofx+2, column=10)
 
-        Label(frame, text="Messages").grid(row=5, column=0, sticky=W)
+        Label(frame, text="Messages").grid(row=load_ofx+3, column=0, sticky=W)
         self.messages_ss_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.messages_ss_text.grid(row=5, column=1)
+        self.messages_ss_text.grid(row=load_ofx+3, column=1)
         self.messages_sr_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.messages_sr_text.grid(row=5, column=2)
+        self.messages_sr_text.grid(row=load_ofx+3, column=2)
         self.messages_1ms_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.messages_1ms_text.grid(row=5, column=3)
+        self.messages_1ms_text.grid(row=load_ofx+3, column=3)
         self.messages_1mr_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.messages_1mr_text.grid(row=5, column=4)
+        self.messages_1mr_text.grid(row=load_ofx+3, column=4)
         self.messages_5ms_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.messages_5ms_text.grid(row=5, column=5)
+        self.messages_5ms_text.grid(row=load_ofx+3, column=5)
         self.messages_5mr_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.messages_5mr_text.grid(row=5, column=6)
+        self.messages_5mr_text.grid(row=load_ofx+3, column=6)
         self.messages_15ms_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.messages_15ms_text.grid(row=5, column=7)
+        self.messages_15ms_text.grid(row=load_ofx+3, column=7)
         self.messages_15mr_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.messages_15mr_text.grid(row=5, column=8)
-        self.messages_ts_text = Text(frame, height=1, width=12, state=DISABLED)
-        self.messages_ts_text.grid(row=5, column=9)
-        self.messages_tr_text = Text(frame, height=1, width=12, state=DISABLED)
-        self.messages_tr_text.grid(row=5, column=10)
+        self.messages_15mr_text.grid(row=load_ofx+3, column=8)
+        self.messages_ts_text = Text(frame, height=1, width=16, state=DISABLED)
+        self.messages_ts_text.grid(row=load_ofx+3, column=9)
+        self.messages_tr_text = Text(frame, height=1, width=16, state=DISABLED)
+        self.messages_tr_text.grid(row=load_ofx+3, column=10)
 
-        Label(frame, text="Published").grid(row=6, column=0, sticky=W)
+        Label(frame, text="Published").grid(row=load_ofx+4, column=0, sticky=W)
 #        self.publish_ss_text = Text(frame, height=1, width=10, state=DISABLED)
 #        self.publish_ss_text.grid(row=5+1, column=1)
 #        self.publish_sr_text = Text(frame, height=1, width=10, state=DISABLED)
-#        self.publish_sr_text.grid(row=5+1, column=2)
+#        self.publish_sr_text.grid(row=load_ofx+4, column=2)
         self.publish_1ms_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.publish_1ms_text.grid(row=5+1, column=3)
+        self.publish_1ms_text.grid(row=load_ofx+4, column=3)
         self.publish_1mr_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.publish_1mr_text.grid(row=5+1, column=4)
+        self.publish_1mr_text.grid(row=load_ofx+4, column=4)
         self.publish_5ms_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.publish_5ms_text.grid(row=5+1, column=5)
+        self.publish_5ms_text.grid(row=load_ofx+4, column=5)
         self.publish_5mr_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.publish_5mr_text.grid(row=5+1, column=6)
+        self.publish_5mr_text.grid(row=load_ofx+4, column=6)
         self.publish_15ms_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.publish_15ms_text.grid(row=5+1, column=7)
+        self.publish_15ms_text.grid(row=load_ofx+4, column=7)
         self.publish_15mr_text = Text(frame, height=1, width=10, state=DISABLED)
-        self.publish_15mr_text.grid(row=5+1, column=8)
+        self.publish_15mr_text.grid(row=load_ofx+4, column=8)
 #        self.publish_ts_text = Text(frame, height=1, width=10, state=DISABLED)
-#        self.publish_ts_text.grid(row=5+1, column=9)
+#        self.publish_ts_text.grid(row=load_ofx+4, column=9)
 #        self.publish_tr_text = Text(frame, height=1, width=10, state=DISABLED)
-#        self.publish_tr_text.grid(row=5+1, column=10)
+#        self.publish_tr_text.grid(row=load_ofx+4, column=10)
 
-        Label(frame, text="Connections").grid(row=7, column=0, sticky=W)
+        Label(frame, text="Connections").grid(row=load_ofx+5, column=0, sticky=W)
 #        self.connections_s_text = Text(frame, height=1, width=20, state=DISABLED)
-#        self.connections_s_text.grid(row=6+1, column=1, columnspan=2)
+#        self.connections_s_text.grid(row=load_ofx+5, column=1, columnspan=2)
         self.connections_1m_text = Text(frame, height=1, width=21, state=DISABLED)
-        self.connections_1m_text.grid(row=6+1, column=3, columnspan=2)
+        self.connections_1m_text.grid(row=load_ofx+5, column=3, columnspan=2)
         self.connections_5m_text = Text(frame, height=1, width=21, state=DISABLED)
-        self.connections_5m_text.grid(row=6+1, column=5, columnspan=2)
+        self.connections_5m_text.grid(row=load_ofx+5, column=5, columnspan=2)
         self.connections_15m_text = Text(frame, height=1, width=21, state=DISABLED)
-        self.connections_15m_text.grid(row=6+1, column=7, columnspan=2)
+        self.connections_15m_text.grid(row=load_ofx+5, column=7, columnspan=2)
 #        self.connections_t_text = Text(frame, height=1, width=20, state=DISABLED)
-#        self.connections_t_text.grid(row=6+1, column=9, columnspan=2)
+#        self.connections_t_text.grid(row=load_ofx+5, column=9, columnspan=2)
 
-        Label(frame, text="Sockets").grid(row=8, column=0, sticky=W)
+        Label(frame, text="Sockets").grid(row=load_ofx+6, column=0, sticky=W)
 #        self.sockets_s_text = Text(frame, height=1, width=20, state=DISABLED)
-#        self.sockets_s_text.grid(row=7+1, column=1, columnspan=2)
+#        self.sockets_s_text.grid(row=load_ofx+6, column=1, columnspan=2)
         self.sockets_1m_text = Text(frame, height=1, width=21, state=DISABLED)
-        self.sockets_1m_text.grid(row=7+1, column=3, columnspan=2)
+        self.sockets_1m_text.grid(row=load_ofx+6, column=3, columnspan=2)
         self.sockets_5m_text = Text(frame, height=1, width=21, state=DISABLED)
-        self.sockets_5m_text.grid(row=7+1, column=5, columnspan=2)
+        self.sockets_5m_text.grid(row=load_ofx+6, column=5, columnspan=2)
         self.sockets_15m_text = Text(frame, height=1, width=21, state=DISABLED)
-        self.sockets_15m_text.grid(row=7+1, column=7, columnspan=2)
+        self.sockets_15m_text.grid(row=load_ofx+6, column=7, columnspan=2)
 #        self.sockets_t_text = Text(frame, height=1, width=20, state=DISABLED)
-#        self.sockets_t_text.grid(row=7+1, column=9, columnspan=2)
+#        self.sockets_t_text.grid(row=load_ofx+6, column=9, columnspan=2)
 
         fill2_ofx=load_ofx+7
         Label(frame, text="").grid(row=fill2_ofx, column=0)
@@ -189,13 +205,13 @@ class MyMQTTClientCore(MQTTClientCore):
         other_ofy=8
         Label(frame, text="Other:").grid(row=other_ofx, column=other_ofy, sticky=W)
         Label(frame, text="Uptime").grid(row=other_ofx+1, column=other_ofy+1, sticky=W)
-        self.uptime_text = Text(frame, height=1, width=12, state=DISABLED)
+        self.uptime_text = Text(frame, height=1, width=16, state=DISABLED)
         self.uptime_text.grid(row=other_ofx+1, column=other_ofy+2)
         Label(frame, text="Heap Current").grid(row=other_ofx+2, column=other_ofy+1, sticky=W)
-        self.heap_text = Text(frame, height=1, width=12, state=DISABLED)
+        self.heap_text = Text(frame, height=1, width=16, state=DISABLED)
         self.heap_text.grid(row=other_ofx+2, column=other_ofy+2)
         Label(frame, text="Heap Max.").grid(row=other_ofx+3, column=other_ofy+1, sticky=W)
-        self.heap_max_text = Text(frame, height=1, width=12, state=DISABLED)
+        self.heap_max_text = Text(frame, height=1, width=16, state=DISABLED)
         self.heap_max_text.grid(row=other_ofx+3, column=other_ofy+2)
 #        Label(frame, text="Bridges:").grid(row=other_ofx+4, column=other_ofy, sticky=W)
 #        self.connections_text = Text(frame, height=3, width=8, state=DISABLED)
@@ -228,8 +244,9 @@ class MyMQTTClientCore(MQTTClientCore):
         self.log_text = ScrolledText(frame, height=6, state=DISABLED)
         self.log_text.grid(row=log_ofx+1, column=0, columnspan=11, sticky=N+W+E+S)
         self.root.update()
+        self.root.protocol("WM_DELETE_WINDOW", self.closehandler)
+        self.root.update()
         self.t = threading.Thread(target=self.do_thread_loop)
-        self.t.start()
 
     def do_thread_loop(self):
         self.main_loop()        
@@ -242,10 +259,28 @@ class MyMQTTClientCore(MQTTClientCore):
         MQTTClientCore.on_message(self, mself, obj, msg)
         obj.put(msg)
 
+    def closehandler(self):
+        print "closing window"
+        self.root.destroy()
+        self.root.quit()
+
+
+def connect():
+    MQTTClientCore.mqtt_connect(daemon.mqttcore)
+
+def disconnect():
+    MQTTClientCore.mqtt_disconnect(daemon.mqttcore)
+
 
 class MyDaemon(Daemon):
     def run(self):
-        self.mqttcore = MyMQTTClientCore(APPNAME, clienttype="type1")
+        self.mqttcore = MyMQTTClientCore(APPNAME, clienttype="type3")
+        if(len(sys.argv) > 1):
+            self.mqttcore.mqtthost = sys.argv[1]
+            self.mqttcore.host_text.delete(1.0, END)
+            self.mqttcore.host_text.insert(END, self.mqttcore.mqtthost)
+            self.mqttcore.root.update()
+        self.mqttcore.t.start()
         while(self.mqttcore.running):
             self.mqttcore.root.update()
             if (not self.mqttcore.q.empty()):
@@ -253,56 +288,69 @@ class MyDaemon(Daemon):
                 if(msg.topic == "$SYS/broker/version"):
                     self.mqttcore.version_text.config(state=NORMAL)
                     self.mqttcore.version_text.delete(1.0, END)
-                    self.mqttcore.version_text.insert(END, msg.payload)  
+                    self.mqttcore.version_text.insert(END, msg.payload) 
+                    self.mqttcore.version_text.config(state=DISABLED) 
                 elif(msg.topic == "$SYS/broker/changeset"):
                     self.mqttcore.revision_text.config(state=NORMAL)
                     self.mqttcore.revision_text.delete(1.0, END)
-                    self.mqttcore.revision_text.insert(END, msg.payload)                   
+                    self.mqttcore.revision_text.insert(END, msg.payload) 
+                    self.mqttcore.revision_text.config(state=DISABLED)                  
                 elif(msg.topic == "$SYS/broker/timestamp"):
                     self.mqttcore.timestamp_text.config(state=NORMAL)
                     self.mqttcore.timestamp_text.delete(1.0, END)
                     self.mqttcore.timestamp_text.insert(END, msg.payload)
+                    self.mqttcore.timestamp_text.config(state=DISABLED)
 
                 elif(msg.topic == "$SYS/broker/bytes/per second/sent"):
                     self.mqttcore.bytes_ss_text.config(state=NORMAL)
                     self.mqttcore.bytes_ss_text.delete(1.0, END)
                     self.mqttcore.bytes_ss_text.insert(END, msg.payload)
+                    self.mqttcore.bytes_ss_text.config(state=DISABLED)
                 elif(msg.topic == "$SYS/broker/bytes/per second/received"):
                     self.mqttcore.bytes_sr_text.config(state=NORMAL)
                     self.mqttcore.bytes_sr_text.delete(1.0, END)
                     self.mqttcore.bytes_sr_text.insert(END, msg.payload)
+                    self.mqttcore.bytes_sr_text.config(state=DISABLED)
                 elif(msg.topic == "$SYS/broker/load/bytes/sent/1min"):
                     self.mqttcore.bytes_1ms_text.config(state=NORMAL)
                     self.mqttcore.bytes_1ms_text.delete(1.0, END)
                     self.mqttcore.bytes_1ms_text.insert(END, msg.payload)
+                    self.mqttcore.bytes_1ms_text.config(state=DISABLED)
                 elif(msg.topic == "$SYS/broker/load/bytes/received/1min"):
                     self.mqttcore.bytes_1mr_text.config(state=NORMAL)
                     self.mqttcore.bytes_1mr_text.delete(1.0, END)
                     self.mqttcore.bytes_1mr_text.insert(END, msg.payload)
+                    self.mqttcore.bytes_1mr_text.config(state=DISABLED)
                 elif(msg.topic == "$SYS/broker/load/bytes/sent/5min"):
                     self.mqttcore.bytes_5ms_text.config(state=NORMAL)
                     self.mqttcore.bytes_5ms_text.delete(1.0, END)
                     self.mqttcore.bytes_5ms_text.insert(END, msg.payload)
+                    self.mqttcore.bytes_5ms_text.config(state=DISABLED)
                 elif(msg.topic == "$SYS/broker/load/bytes/received/5min"):
                     self.mqttcore.bytes_5mr_text.config(state=NORMAL)
                     self.mqttcore.bytes_5mr_text.delete(1.0, END)
                     self.mqttcore.bytes_5mr_text.insert(END, msg.payload)
+                    self.mqttcore.bytes_5mr_text.config(state=DISABLED)
                 elif(msg.topic == "$SYS/broker/load/bytes/sent/15min"):
                     self.mqttcore.bytes_15ms_text.config(state=NORMAL)
                     self.mqttcore.bytes_15ms_text.delete(1.0, END)
                     self.mqttcore.bytes_15ms_text.insert(END, msg.payload)
+                    self.mqttcore.bytes_15ms_text.config(state=DISABLED)
                 elif(msg.topic == "$SYS/broker/load/bytes/received/15min"):
                     self.mqttcore.bytes_15mr_text.config(state=NORMAL)
                     self.mqttcore.bytes_15mr_text.delete(1.0, END)
                     self.mqttcore.bytes_15mr_text.insert(END, msg.payload)
+                    self.mqttcore.bytes_15mr_text.config(state=DISABLED)
                 elif(msg.topic == "$SYS/broker/bytes/sent"):
                     self.mqttcore.bytes_ts_text.config(state=NORMAL)
                     self.mqttcore.bytes_ts_text.delete(1.0, END)
                     self.mqttcore.bytes_ts_text.insert(END, msg.payload)
+                    self.mqttcore.bytes_ts_text.config(state=DISABLED)
                 elif(msg.topic == "$SYS/broker/bytes/received"):
                     self.mqttcore.bytes_tr_text.config(state=NORMAL)
                     self.mqttcore.bytes_tr_text.delete(1.0, END)
                     self.mqttcore.bytes_tr_text.insert(END, msg.payload)
+                    self.mqttcore.bytes_tr_text.config(state=DISABLED)
 
                 elif(msg.topic == "$SYS/broker/messages/per second/sent"):
                     self.mqttcore.messages_ss_text.config(state=NORMAL)
@@ -453,13 +501,9 @@ class MyDaemon(Daemon):
                     self.mqttcore.uptime_text.config(state=NORMAL)
                     self.mqttcore.uptime_text.delete(1.0, END)
                     t = msg.payload.split(" ")
-#                    m = int(val(t[0]) / 60)
-#                    s = t[0] - (m * 60)
-##                    h = int(m / 60)
-#                    m = m - (h * 60)
-#                    d = int(h / 24)
-#                    h = h - (d * 24)
-                    self.mqttcore.uptime_text.insert(END, t[0])  #d + "d " + h + ":" + m + ":" + s)
+                    uptime = datetime.timedelta(seconds=int(t[0]))
+                    uptime_text = str(uptime)
+                    self.mqttcore.uptime_text.insert(END, uptime_text) 
                 elif(msg.topic == "$SYS/broker/heap/current size"):
                     self.mqttcore.heap_text.config(state=NORMAL)
                     self.mqttcore.heap_text.delete(1.0, END)
@@ -485,10 +529,12 @@ class MyDaemon(Daemon):
                     self.mqttcore.inflight_text.config(state=NORMAL)
                     self.mqttcore.inflight_text.delete(1.0, END)
                     self.mqttcore.inflight_text.insert(END, msg.payload)
+                    self.mqttcore.inflight_text.config(state=DISABLED)
                 elif(msg.topic == "$SYS/broker/subscriptions/count"):
                     self.mqttcore.subscriptions_text.config(state=NORMAL)
                     self.mqttcore.subscriptions_text.delete(1.0, END)
                     self.mqttcore.subscriptions_text.insert(END, msg.payload)
+                    self.mqttcore.subscriptions_text.config(state=DISABLED)
 
                 elif((msg.topic == "$SYS/broker/log/E") or 
                      (msg.topic == "$SYS/broker/log/N") or 
@@ -497,8 +543,8 @@ class MyDaemon(Daemon):
                     self.mqttcore.log_text.config(state=NORMAL)
                     self.mqttcore.log_text.insert(END, msg.payload)
                     self.mqttcore.log_text.insert(END, "\n")
-#                    print self.mqttcore.log_text.vbar.get()
-#                    self.mqttcore.log_text.vbar.set((0.0, 0.8, 1.0))
+                    self.mqttcore.log_text.vbar.set(0.9, 0.91)
+                    self.mqttcore.log_text.config(state=DISABLED)
 
 if __name__ == "__main__":
     daemon = MyDaemon('/tmp/' + APPNAME + '.pid')
